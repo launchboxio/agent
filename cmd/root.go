@@ -1,16 +1,27 @@
 package cmd
 
 import (
+	"flag"
 	"fmt"
-	"github.com/launchboxio/agent/pkg/agent"
+	action_cable "github.com/launchboxio/action-cable"
+	"github.com/launchboxio/agent/pkg/client"
+	"github.com/launchboxio/agent/pkg/pinger"
+	"github.com/launchboxio/agent/pkg/watcher"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/clientcredentials"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
+	"k8s.io/client-go/util/homedir"
 	"log"
+	"net/http"
 	"os"
+	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"strconv"
+	"time"
 )
 
 var rootCmd = &cobra.Command{
@@ -18,41 +29,71 @@ var rootCmd = &cobra.Command{
 	Short: "LaunchboxHQ Agent",
 	Run: func(cmd *cobra.Command, args []string) {
 		//url, _ := cmd.Flags().GetString("url")
-		clientId, _ := cmd.Flags().GetString("client-id")
-		clientSecret, _ := cmd.Flags().GetString("client-secret")
-		authUrl, _ := cmd.Flags().GetString("auth-url")
+		clientId := os.Getenv("CLIENT_ID")
+		clientSecret := os.Getenv("CLIENT_SECRET")
+		tokenUrl, _ := cmd.Flags().GetString("token-url")
 		apiUrl, _ := cmd.Flags().GetString("api-url")
+		streamUrl, _ := cmd.Flags().GetString("stream-url")
+
+		clusterId, _ := cmd.Flags().GetInt("cluster-id")
+		cid := strconv.Itoa(clusterId)
+		channel, _ := cmd.Flags().GetString("channel")
+
+		identifier := map[string]string{
+			"channel":    channel,
+			"cluster_id": cid,
+		}
 
 		ctx := context.Background()
 		conf := &clientcredentials.Config{
 			ClientID:     clientId,
 			ClientSecret: clientSecret,
-			TokenURL:     fmt.Sprintf("%s/oauth/token", authUrl),
+			TokenURL:     fmt.Sprintf(tokenUrl),
 		}
+		sdk := client.New(apiUrl, conf)
 
+		logger := zap.New()
+
+		kubeClient, err := loadClient()
+
+		// Start our pinger. It just updates Launchbox that the agent is running
+		go func() {
+			ping := pinger.New(sdk, logger)
+			_ = ping.Init()
+			ping.Start(clusterId, time.Second*5)
+		}()
+
+		//Start our watcher process. Whenever a project CRDs status is
+		//updated, it will post the data to Launchbox
+		go func() {
+			watch := watcher.New(kubeClient, sdk)
+			if err := watch.Run(schema.GroupVersionResource{
+				Resource: "project",
+				Group:    "core.launchboxhq.io",
+				Version:  "v1alpha1",
+			}); err != nil {
+				log.Fatal(err)
+			}
+		}()
+
+		//handler := events.New(logger)
 		token, err := conf.Token(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
+		stream, _ := action_cable.New(streamUrl, http.Header{
+			"Authorization": []string{"Bearer " + token.AccessToken},
+		})
 
-		// use the current context in kubeconfig
-		config, err := clientcmd.BuildConfigFromFlags("", "/Users/rwittman/.kube/config")
-		if err != nil {
-			panic(err.Error())
+		sub := &action_cable.Subscription{
+			Identifier: identifier,
 		}
 
-		// create the clientset
-		clientset, err := kubernetes.NewForConfig(config)
-		metricsClient, err := metrics.NewForConfig(config)
-		ag := &agent.Agent{
-			Url: apiUrl,
-			// TODO: We need refreshing of this token
-			Token:         token.AccessToken,
-			Client:        clientset,
-			MetricsClient: metricsClient,
+		stream.Subscribe(sub)
+
+		if err := stream.Connect(ctx); err != nil {
+			log.Fatal(err)
 		}
-		//
-		err = ag.Run()
 	},
 }
 
@@ -64,13 +105,33 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().String("auth-url", "https://auth.launchboxhq.io:443/connection/websocket", "URL for webhook events")
-	rootCmd.Flags().String("api-url", "https://api.launchboxhq.io", "Api Endpoint for launchbox")
-	rootCmd.Flags().String("cluster-id", "", "Cluster ID")
-	_ = rootCmd.MarkFlagRequired("cluster-id")
-
-	rootCmd.Flags().String("client-id", "", "Application ID for the cluster")
-	rootCmd.Flags().String("client-secret", "", "Application secret for the cluster")
+	rootCmd.Flags().String("token-url", "https://launchboxhq.io/oauth/token", "Authentication URL for getting access tokens")
+	rootCmd.Flags().String("api-url", "https://launchboxhq.io/api/v1/", "Api Endpoint for launchbox")
+	rootCmd.Flags().String("stream-url", "https://launchboxhq.io/cable", "Launchbox websocket endpoint")
+	rootCmd.Flags().Int("cluster-id", 0, "Cluster ID")
+	rootCmd.Flags().String("channel", "ClusterChannel", "Stream channel to subscribe to")
 }
 
-// go run main.go --url ws://localhost:8000/connection/websocket --token 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM3MjIiLCJleHAiOjE2ODM5NDgzNTMsImlhdCI6MTY4MzM0MzU1M30.21ahIMPjE-oKFTIZgxj4mx0Ovew41nXPD1pIm0x2SAo' --cluster-id 1
+func loadClient() (*dynamic.DynamicClient, error) {
+	if os.Getenv("KUBERNETES_HOST") != "" {
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			return nil, err
+		}
+		return dynamic.NewForConfig(config)
+	}
+
+	var kubeconfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else {
+		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	}
+	flag.Parse()
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return dynamic.NewForConfig(config)
+}
