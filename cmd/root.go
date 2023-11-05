@@ -1,16 +1,18 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
 	action_cable "github.com/launchboxio/action-cable"
 	"github.com/launchboxio/agent/pkg/client"
+	"github.com/launchboxio/agent/pkg/events"
 	"github.com/launchboxio/agent/pkg/pinger"
 	"github.com/launchboxio/agent/pkg/watcher"
+	"github.com/launchboxio/operator/api/v1alpha1"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/clientcredentials"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -19,6 +21,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"strconv"
 	"time"
@@ -44,6 +48,8 @@ var rootCmd = &cobra.Command{
 			"cluster_id": cid,
 		}
 
+		fmt.Println(identifier)
+
 		ctx := context.Background()
 		conf := &clientcredentials.Config{
 			ClientID:     clientId,
@@ -53,8 +59,6 @@ var rootCmd = &cobra.Command{
 		sdk := client.New(apiUrl, conf)
 
 		logger := zap.New()
-
-		kubeClient, err := loadClient()
 
 		// Start our pinger. It just updates Launchbox that the agent is running
 		go func() {
@@ -66,30 +70,45 @@ var rootCmd = &cobra.Command{
 		//Start our watcher process. Whenever a project CRDs status is
 		//updated, it will post the data to Launchbox
 		go func() {
-			watch := watcher.New(kubeClient, sdk)
+			kubeClient, err := loadDynamicClient()
+			if err != nil {
+				logger.Error(err, "Failed to build watcher client")
+				os.Exit(1)
+			}
+			watch := watcher.New(kubeClient, sdk, logger)
 			if err := watch.Run(schema.GroupVersionResource{
-				Resource: "project",
+				Resource: "projects",
 				Group:    "core.launchboxhq.io",
 				Version:  "v1alpha1",
 			}); err != nil {
-				log.Fatal(err)
+				logger.Error(err, "Failed to start watcher")
+				os.Exit(1)
 			}
 		}()
 
-		//handler := events.New(logger)
 		token, err := conf.Token(ctx)
 		if err != nil {
-			log.Fatal(err)
+			logger.Error(err, "Failed to get authentication token")
+			os.Exit(1)
 		}
 		stream, _ := action_cable.New(streamUrl, http.Header{
 			"Authorization": []string{"Bearer " + token.AccessToken},
 		})
-
-		sub := &action_cable.Subscription{
-			Identifier: identifier,
+		stream.OnMessage = func(message []byte) {
+			logger.Info(string(message))
+		}
+		stream.ErrorHandler = func(err error) {
+			logger.Error(err, "Error on stream")
 		}
 
-		stream.Subscribe(sub)
+		client, err := loadClient()
+		if err != nil {
+			logger.Error(err, "Failed to get build runtime client")
+			os.Exit(1)
+		}
+
+		handler := events.New(logger, client)
+		handler.RegisterSubscriptions(stream, identifier)
 
 		if err := stream.Connect(ctx); err != nil {
 			log.Fatal(err)
@@ -112,7 +131,7 @@ func init() {
 	rootCmd.Flags().String("channel", "ClusterChannel", "Stream channel to subscribe to")
 }
 
-func loadClient() (*dynamic.DynamicClient, error) {
+func loadDynamicClient() (*dynamic.DynamicClient, error) {
 	if os.Getenv("KUBERNETES_HOST") != "" {
 		config, err := rest.InClusterConfig()
 		if err != nil {
@@ -121,17 +140,26 @@ func loadClient() (*dynamic.DynamicClient, error) {
 		return dynamic.NewForConfig(config)
 	}
 
-	var kubeconfig *string
+	var kubeconfig string
 	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		kubeconfig = filepath.Join(home, ".kube", "config")
 	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		kubeconfig = os.Getenv("KUBECONFIG")
 	}
-	flag.Parse()
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		panic(err.Error())
 	}
 
 	return dynamic.NewForConfig(config)
+}
+
+func loadClient() (runtimeclient.Client, error) {
+	kubeClient, err := runtimeclient.New(config.GetConfigOrDie(), runtimeclient.Options{})
+	if err != nil {
+		return nil, err
+	}
+	utilruntime.Must(v1alpha1.AddToScheme(kubeClient.Scheme()))
+	return kubeClient, nil
 }
