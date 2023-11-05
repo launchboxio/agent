@@ -132,7 +132,7 @@ func init() {
 }
 
 func loadDynamicClient() (*dynamic.DynamicClient, error) {
-	if os.Getenv("KUBERNETES_HOST") != "" {
+	if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
 		config, err := rest.InClusterConfig()
 		if err != nil {
 			return nil, err
