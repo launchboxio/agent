@@ -54,7 +54,7 @@ var rootCmd = &cobra.Command{
 		conf := &clientcredentials.Config{
 			ClientID:     clientId,
 			ClientSecret: clientSecret,
-			TokenURL:     fmt.Sprintf(tokenUrl),
+			TokenURL:     tokenUrl,
 		}
 		sdk := client.New(apiUrl, conf)
 
