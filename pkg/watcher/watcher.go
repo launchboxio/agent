@@ -2,7 +2,6 @@ package watcher
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/launchboxio/agent/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +39,6 @@ func (w *Watcher) Run(resource schema.GroupVersionResource) error {
 
 		update := &client.ProjectUpdatePayload{}
 		projectId, projectIdFound, err := unstructured.NestedInt64(project.UnstructuredContent(), "spec", "id")
-		fmt.Println(projectId)
 		if err != nil {
 			w.Logger.Error(err, "Failed getting project ID")
 			continue
@@ -50,7 +48,6 @@ func (w *Watcher) Run(resource schema.GroupVersionResource) error {
 			continue
 		}
 		status, statusFound, err := unstructured.NestedString(project.UnstructuredContent(), "status", "status")
-		fmt.Println(status)
 		if err != nil {
 			w.Logger.Error(err, "Failed getting status field")
 			continue
@@ -62,7 +59,6 @@ func (w *Watcher) Run(resource schema.GroupVersionResource) error {
 		}
 
 		caCert, caCertFound, err := unstructured.NestedString(project.UnstructuredContent(), "status", "caCertificate")
-		fmt.Println(caCert)
 		if err != nil {
 			w.Logger.Error(err, "Failed getting caCertificate field")
 			continue

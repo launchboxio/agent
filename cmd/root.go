@@ -48,8 +48,6 @@ var rootCmd = &cobra.Command{
 			"cluster_id": cid,
 		}
 
-		fmt.Println(identifier)
-
 		ctx := context.Background()
 		conf := &clientcredentials.Config{
 			ClientID:     clientId,

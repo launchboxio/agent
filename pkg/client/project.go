@@ -29,7 +29,6 @@ type ProjectUpdateResponse struct {
 }
 
 func (p *ProjectService) Update(projectId int, data *ProjectUpdateRequest) (*ProjectUpdateResponse, error) {
-	fmt.Println(data.Project)
 	path := fmt.Sprintf("/api/v1/projects/%d", projectId)
 	res := new(ProjectUpdateResponse)
 	_, err := p.sling.Patch(path).BodyJSON(data).ReceiveSuccess(res)
