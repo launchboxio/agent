@@ -6,6 +6,7 @@ import (
 	"github.com/launchboxio/agent/pkg/client"
 	"github.com/launchboxio/agent/pkg/events"
 	"github.com/launchboxio/agent/pkg/pinger"
+	"github.com/launchboxio/agent/pkg/server"
 	"github.com/launchboxio/agent/pkg/watcher"
 	"github.com/launchboxio/operator/api/v1alpha1"
 	"github.com/spf13/cobra"
@@ -84,6 +85,13 @@ var rootCmd = &cobra.Command{
 			}
 		}()
 
+		go func() {
+			bindAddress, _ := cmd.Flags().GetString("bind-address")
+			if err := server.New(bindAddress).Run(); err != nil {
+				log.Fatal(err)
+			}
+		}()
+
 		token, err := conf.Token(ctx)
 		if err != nil {
 			logger.Error(err, "Failed to get authentication token")
@@ -127,6 +135,7 @@ func init() {
 	rootCmd.Flags().String("stream-url", "https://launchboxhq.io/cable", "Launchbox websocket endpoint")
 	rootCmd.Flags().Int("cluster-id", 0, "Cluster ID")
 	rootCmd.Flags().String("channel", "ClusterChannel", "Stream channel to subscribe to")
+	rootCmd.Flags().String("bind-address", ":8080", "Bind address for the http server")
 }
 
 func loadDynamicClient() (*dynamic.DynamicClient, error) {
