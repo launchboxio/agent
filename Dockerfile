@@ -11,4 +11,4 @@ COPY cmd/ cmd/
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /agent
 
-CMD ["/agent"]
+ENTRYPOINT ["/agent"]
