@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -27,6 +26,5 @@ func health(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "OK")
 }
 func ready(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got /hello request\n")
 	io.WriteString(w, "OK")
 }
