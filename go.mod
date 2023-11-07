@@ -2,13 +2,11 @@ module github.com/launchboxio/agent
 
 go 1.21
 
-toolchain go1.21.3
-
 require (
 	github.com/crossplane/crossplane v1.14.0
 	github.com/dghubble/sling v1.4.1
 	github.com/go-logr/logr v1.2.4
-	github.com/launchboxio/action-cable v0.0.0-20231103192416-4a1eb1e2631f
+	github.com/launchboxio/action-cable v1.0.0
 	github.com/launchboxio/operator v0.0.0-20231104152433-f395033ad5c2
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/net v0.17.0
