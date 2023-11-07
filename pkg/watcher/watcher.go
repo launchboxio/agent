@@ -3,7 +3,8 @@ package watcher
 import (
 	"context"
 	"github.com/go-logr/logr"
-	"github.com/launchboxio/agent/pkg/client"
+	launchbox "github.com/launchboxio/launchbox-go-sdk/config"
+	"github.com/launchboxio/launchbox-go-sdk/service/project"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -12,14 +13,14 @@ import (
 )
 
 type Watcher struct {
-	Sdk    *client.Client
+	Sdk    *launchbox.Config
 	Kube   *dynamic.DynamicClient
 	Logger logr.Logger
 }
 
 const DefaultProjectStatus = "provisioning"
 
-func New(clientset *dynamic.DynamicClient, sdk *client.Client, logger logr.Logger) *Watcher {
+func New(clientset *dynamic.DynamicClient, sdk *launchbox.Config, logger logr.Logger) *Watcher {
 	return &Watcher{
 		Sdk:    sdk,
 		Kube:   clientset,
@@ -33,12 +34,11 @@ func (w *Watcher) Run(resource schema.GroupVersionResource) error {
 		return err
 	}
 
-	projectClient := w.Sdk.Projects()
+	projectClient := project.New(w.Sdk)
 	for event := range changes.ResultChan() {
-		project := event.Object.(*unstructured.Unstructured)
+		probject := event.Object.(*unstructured.Unstructured)
 
-		update := &client.ProjectUpdatePayload{}
-		projectId, projectIdFound, err := unstructured.NestedInt64(project.UnstructuredContent(), "spec", "id")
+		projectId, projectIdFound, err := unstructured.NestedInt64(probject.UnstructuredContent(), "spec", "id")
 		if err != nil {
 			w.Logger.Error(err, "Failed getting project ID")
 			continue
@@ -47,7 +47,12 @@ func (w *Watcher) Run(resource schema.GroupVersionResource) error {
 			w.Logger.Error(err, "Resource didn't have an ID...")
 			continue
 		}
-		status, statusFound, err := unstructured.NestedString(project.UnstructuredContent(), "status", "status")
+
+		update := &project.UpdateProjectInput{
+			ProjectId: int(projectId),
+		}
+
+		status, statusFound, err := unstructured.NestedString(probject.UnstructuredContent(), "status", "status")
 		if err != nil {
 			w.Logger.Error(err, "Failed getting status field")
 			continue
@@ -58,7 +63,7 @@ func (w *Watcher) Run(resource schema.GroupVersionResource) error {
 			update.Status = DefaultProjectStatus
 		}
 
-		caCert, caCertFound, err := unstructured.NestedString(project.UnstructuredContent(), "status", "caCertificate")
+		caCert, caCertFound, err := unstructured.NestedString(probject.UnstructuredContent(), "status", "caCertificate")
 		if err != nil {
 			w.Logger.Error(err, "Failed getting caCertificate field")
 			continue
@@ -68,16 +73,15 @@ func (w *Watcher) Run(resource schema.GroupVersionResource) error {
 			update.CaCertificate = caCert
 		}
 
-		request := &client.ProjectUpdateRequest{Project: update}
 		switch event.Type {
 		case watch.Added:
 			w.Logger.Info("Updating project", "ID", projectId)
-			if _, err := projectClient.Update(int(projectId), request); err != nil {
+			if _, err := projectClient.Update(update); err != nil {
 				w.Logger.Error(err, "Failed updating project")
 			}
 		case watch.Modified:
 			w.Logger.Info("Updating project", "ID", projectId)
-			if _, err := projectClient.Update(int(projectId), request); err != nil {
+			if _, err := projectClient.Update(update); err != nil {
 				w.Logger.Error(err, "Failed updating project")
 			}
 		case watch.Deleted:

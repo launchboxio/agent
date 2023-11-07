@@ -2,26 +2,26 @@ package pinger
 
 import (
 	"github.com/go-logr/logr"
-	"github.com/launchboxio/agent/pkg/client"
+	"github.com/launchboxio/launchbox-go-sdk/service/cluster"
 	"time"
 )
 
 type Pinger struct {
-	Client  *client.Client
+	Client  *cluster.Client
 	Logger  logr.Logger
-	payload client.ClusterPing
+	payload *cluster.UpdateClusterInput
 }
 
-func New(httpClient *client.Client, logger logr.Logger) *Pinger {
+func New(client *cluster.Client, logger logr.Logger) *Pinger {
 	return &Pinger{
-		Client: httpClient,
+		Client: client,
 		Logger: logger,
 	}
 }
 
-func (p *Pinger) Init() error {
+func (p *Pinger) Init(clusterId int) error {
 	// TODO: These should be sourced from the environment
-	p.payload = client.ClusterPing{
+	p.payload = &cluster.UpdateClusterInput{
 		Version:         "1.25.15",
 		AgentVersion:    "1.2.3",
 		Provider:        "launchbox",
@@ -31,22 +31,18 @@ func (p *Pinger) Init() error {
 	return nil
 }
 
-func (p *Pinger) Start(clusterId int, interval time.Duration) {
+func (p *Pinger) Start(interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	quit := make(chan struct{})
-	operator := p.Client.Operator()
 
-	data := &client.PingRequest{
-		Cluster: p.payload,
-	}
-	if _, err := operator.Ping(clusterId, data); err != nil {
+	if _, err := p.Client.Update(p.payload); err != nil {
 		p.Logger.Error(err, "Failed to ping HQ")
 	}
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
-				if _, err := operator.Ping(clusterId, data); err != nil {
+				if _, err := p.Client.Update(p.payload); err != nil {
 					p.Logger.Error(err, "Failed to ping HQ")
 				}
 			case <-quit:

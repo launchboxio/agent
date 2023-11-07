@@ -3,11 +3,12 @@ package cmd
 import (
 	"fmt"
 	action_cable "github.com/launchboxio/action-cable"
-	"github.com/launchboxio/agent/pkg/client"
 	"github.com/launchboxio/agent/pkg/events"
 	"github.com/launchboxio/agent/pkg/pinger"
 	"github.com/launchboxio/agent/pkg/server"
 	"github.com/launchboxio/agent/pkg/watcher"
+	launchbox "github.com/launchboxio/launchbox-go-sdk/config"
+	"github.com/launchboxio/launchbox-go-sdk/service/cluster"
 	"github.com/launchboxio/operator/api/v1alpha1"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
@@ -24,6 +25,8 @@ import (
 	"path/filepath"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+
+	//"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"strconv"
 	"time"
@@ -34,10 +37,6 @@ var rootCmd = &cobra.Command{
 	Short: "LaunchboxHQ Agent",
 	Run: func(cmd *cobra.Command, args []string) {
 		//url, _ := cmd.Flags().GetString("url")
-		clientId := os.Getenv("CLIENT_ID")
-		clientSecret := os.Getenv("CLIENT_SECRET")
-		tokenUrl, _ := cmd.Flags().GetString("token-url")
-		apiUrl, _ := cmd.Flags().GetString("api-url")
 		streamUrl, _ := cmd.Flags().GetString("stream-url")
 
 		clusterId, _ := cmd.Flags().GetInt("cluster-id")
@@ -50,20 +49,19 @@ var rootCmd = &cobra.Command{
 		}
 
 		ctx := context.Background()
-		conf := &clientcredentials.Config{
-			ClientID:     clientId,
-			ClientSecret: clientSecret,
-			TokenURL:     tokenUrl,
+
+		sdk, err := launchbox.Default()
+		if err != nil {
+			log.Fatal(err)
 		}
-		sdk := client.New(apiUrl, conf)
 
 		logger := zap.New()
 
 		// Start our pinger. It just updates Launchbox that the agent is running
 		go func() {
-			ping := pinger.New(sdk, logger)
-			_ = ping.Init()
-			ping.Start(clusterId, time.Second*5)
+			ping := pinger.New(cluster.New(sdk), logger)
+			_ = ping.Init(clusterId)
+			ping.Start(time.Second * 5)
 		}()
 
 		//Start our watcher process. Whenever a project CRDs status is
@@ -91,6 +89,12 @@ var rootCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 		}()
+
+		conf := &clientcredentials.Config{
+			ClientID:     os.Getenv("LAUNCHBOX_CLIENT_ID"),
+			ClientSecret: os.Getenv("LAUNCHBOX_CLIENT_SECRET"),
+			TokenURL:     os.Getenv("LAUNCHBOX_TOKEN_URL"),
+		}
 
 		token, err := conf.Token(ctx)
 		if err != nil {
@@ -130,8 +134,6 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().String("token-url", "https://launchboxhq.io/oauth/token", "Authentication URL for getting access tokens")
-	rootCmd.Flags().String("api-url", "https://launchboxhq.io/api/v1/", "Api Endpoint for launchbox")
 	rootCmd.Flags().String("stream-url", "https://launchboxhq.io/cable", "Launchbox websocket endpoint")
 	rootCmd.Flags().Int("cluster-id", 0, "Cluster ID")
 	rootCmd.Flags().String("channel", "ClusterChannel", "Stream channel to subscribe to")
