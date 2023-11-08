@@ -39,9 +39,6 @@ var version string
 var rootCmd = &cobra.Command{
 	Use:   "agent",
 	Short: "LaunchboxHQ Agent",
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		log.Printf("Agent version: %s\n", version)
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		//url, _ := cmd.Flags().GetString("url")
 		streamUrl, _ := cmd.Flags().GetString("stream-url")
