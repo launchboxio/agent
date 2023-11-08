@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+### [1.0.3](https://github.com/launchboxio/agent/compare/v1.0.2...v1.0.3) (2023-11-08)
+
+
+### Bug Fixes
+
+* **ping:** Add cluster ID to request payload ([ca5a78d](https://github.com/launchboxio/agent/commit/ca5a78da518b5af722d72754422e273632a912fd))
+
 ### [1.0.2](https://github.com/launchboxio/agent/compare/v1.0.1...v1.0.2) (2023-11-08)
 
 
