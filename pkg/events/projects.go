@@ -23,6 +23,9 @@ type ProjectEventPayload struct {
 	Disk   int `json:"disk"`
 }
 
+type ProjectPayload struct {
+}
+
 type ProjectHandler struct {
 	Logger logr.Logger
 	Client client.Client
@@ -108,37 +111,35 @@ func (ph *ProjectHandler) Resume(event *LaunchboxEvent) error {
 	return ph.Client.Update(context.TODO(), project)
 }
 
+// TODO: We should instead just query the projects directly using the SDK
 func projectFromPayload(event *LaunchboxEvent) (*v1alpha1.Project, error) {
 	var users []v1alpha1.ProjectUser
-	if _, ok := event.Data["users"]; ok {
-		for _, user := range event.Data["users"].([]struct {
-			Email       string
-			ClusterRole string
-		}) {
+	if payloadUsers, ok := event.Payload["users"]; ok {
+		for _, user := range payloadUsers.([]interface{}) {
 			users = append(users, v1alpha1.ProjectUser{
-				Email:       user.Email,
-				ClusterRole: user.ClusterRole,
+				Email:       user.(map[string]interface{})["email"].(string),
+				ClusterRole: user.(map[string]interface{})["clusterRole"].(string),
 			})
 		}
 	}
 
 	project := &v1alpha1.Project{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      event.Data["slug"].(string),
+			Name:      event.Payload["slug"].(string),
 			Namespace: "lbx-system",
 		},
 		Spec: v1alpha1.ProjectSpec{
-			Slug: event.Data["slug"].(string),
-			Id:   int(event.Data["id"].(float64)),
+			Slug: event.Payload["slug"].(string),
+			Id:   int(event.Payload["id"].(float64)),
 			// TODO: Pull this from the event payload
 			KubernetesVersion: "1.25.15",
 			Crossplane: v1alpha1.ProjectCrossplaneSpec{
 				Providers: []string{},
 			},
 			Resources: v1alpha1.Resources{
-				Cpu:    int32(event.Data["cpu"].(float64)),
-				Memory: int32(event.Data["memory"].(float64)),
-				Disk:   int32(event.Data["disk"].(float64)),
+				Cpu:    int32(event.Payload["cpu"].(float64)),
+				Memory: int32(event.Payload["memory"].(float64)),
+				Disk:   int32(event.Payload["disk"].(float64)),
 			},
 			Users: users,
 		},
