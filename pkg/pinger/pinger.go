@@ -1,10 +1,10 @@
 package pinger
 
 import (
-  "github.com/go-logr/logr"
-  "github.com/launchboxio/agent/pkg/evaluator"
-  "github.com/launchboxio/launchbox-go-sdk/service/cluster"
-  "time"
+	"github.com/go-logr/logr"
+	"github.com/launchboxio/agent/pkg/evaluator"
+	"github.com/launchboxio/launchbox-go-sdk/service/cluster"
+	"time"
 )
 
 type Pinger struct {
