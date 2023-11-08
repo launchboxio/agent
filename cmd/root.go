@@ -34,9 +34,14 @@ import (
 	"time"
 )
 
+var version string
+
 var rootCmd = &cobra.Command{
 	Use:   "agent",
 	Short: "LaunchboxHQ Agent",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		log.Printf("Agent version: %s\n", version)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		//url, _ := cmd.Flags().GetString("url")
 		streamUrl, _ := cmd.Flags().GetString("stream-url")
@@ -71,7 +76,7 @@ var rootCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 			ping := pinger.New(cluster.New(sdk), logger)
-			_ = ping.Init(clusterId, evaluation)
+			_ = ping.Init(clusterId, evaluation, version)
 			ping.Start(time.Second * 5)
 		}()
 

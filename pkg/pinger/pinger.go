@@ -20,11 +20,11 @@ func New(client *cluster.Client, logger logr.Logger) *Pinger {
 	}
 }
 
-func (p *Pinger) Init(clusterId int, evaluation *evaluator.Evaluation) error {
+func (p *Pinger) Init(clusterId int, evaluation *evaluator.Evaluation, version string) error {
 	// TODO: These should be sourced from the environment
 	p.payload = &cluster.UpdateClusterInput{
 		Version:         evaluation.KubernetesVersion,
-		AgentVersion:    "1.2.3",
+		AgentVersion:    version,
 		Provider:        evaluation.Provider,
 		Region:          evaluation.Region,
 		AgentIdentifier: evaluation.AgentIdentifier,

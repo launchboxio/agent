@@ -9,6 +9,12 @@ import (
 	"os"
 )
 
+const (
+	AwsProviderLabel      = "k8s.io/cloud-provider-aws"
+	MinikubeProviderLabel = "minikube.k8s.io/name"
+	RegionLabel           = "topology.kubernetes.io/region"
+)
+
 type Evaluator struct {
 	KubeClient *kubernetes.Clientset
 }
@@ -50,14 +56,15 @@ func (e *Evaluator) Evaluate() (*Evaluation, error) {
 
 	node := nodes.Items[0]
 
-	for label, value := range node.Labels {
-		if label == "k8s.io/cloud-provider-aws" {
-			result.Provider = "aws"
-		}
+	if _, ok := node.Labels[AwsProviderLabel]; ok {
+		result.Provider = "aws"
+	}
+	if _, ok := node.Labels[MinikubeProviderLabel]; ok {
+		result.Provider = "minikube"
+	}
 
-		if label == "topology.kubernetes.io/region" {
-			result.Region = value
-		}
+	if value, ok := node.Labels[RegionLabel]; ok {
+		result.Region = value
 	}
 
 	return result, nil
