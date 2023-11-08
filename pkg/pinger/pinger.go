@@ -27,6 +27,7 @@ func (p *Pinger) Init(clusterId int) error {
 		Provider:        "launchbox",
 		Region:          "us-east-1",
 		AgentIdentifier: "localhost",
+		ClusterId:       clusterId,
 	}
 	return nil
 }
