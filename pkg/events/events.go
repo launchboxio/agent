@@ -12,6 +12,6 @@ const (
 )
 
 type LaunchboxEvent struct {
-	Type string                 `json:"type"`
-	Data map[string]interface{} `json:"data,omitempty"`
+	Type    string                 `json:"type"`
+	Payload map[string]interface{} `json:"payload,omitempty"`
 }

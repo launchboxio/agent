@@ -29,7 +29,7 @@ func (ah *AddonHandler) syncAddonResource(event *LaunchboxEvent) error {
 	resource := addonFromPayload(event)
 
 	if err := ah.Client.Get(context.TODO(), client.ObjectKey{
-		Name: event.Data["name"].(string),
+		Name: event.Payload["name"].(string),
 	}, addon); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -50,7 +50,7 @@ func (ah *AddonHandler) Update(event *LaunchboxEvent) error {
 func (ah *AddonHandler) Delete(event *LaunchboxEvent) error {
 	addon := &crossplanepkgv1.Configuration{}
 	if err := ah.Client.Get(context.TODO(), client.ObjectKey{
-		Name: event.Data["name"].(string),
+		Name: event.Payload["name"].(string),
 	}, addon); err != nil {
 		return err
 	}
@@ -64,11 +64,11 @@ func addonFromPayload(event *LaunchboxEvent) *crossplanepkgv1.Configuration {
 	revisionLimit := int64(5)
 	return &crossplanepkgv1.Configuration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: event.Data["name"].(string),
+			Name: event.Payload["name"].(string),
 		},
 		Spec: crossplanepkgv1.ConfigurationSpec{
 			PackageSpec: crossplanepkgv1.PackageSpec{
-				Package:                  event.Data["oci_registry"].(string) + ":" + event.Data["oci_version"].(string),
+				Package:                  event.Payload["oci_registry"].(string) + ":" + event.Payload["oci_version"].(string),
 				PackagePullPolicy:        &pullPolicy,
 				RevisionActivationPolicy: &activationPolicy,
 				RevisionHistoryLimit:     &revisionLimit,
