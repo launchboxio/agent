@@ -1,9 +1,10 @@
 package pinger
 
 import (
-	"github.com/go-logr/logr"
-	"github.com/launchboxio/launchbox-go-sdk/service/cluster"
-	"time"
+  "github.com/go-logr/logr"
+  "github.com/launchboxio/agent/pkg/evaluator"
+  "github.com/launchboxio/launchbox-go-sdk/service/cluster"
+  "time"
 )
 
 type Pinger struct {
@@ -19,14 +20,14 @@ func New(client *cluster.Client, logger logr.Logger) *Pinger {
 	}
 }
 
-func (p *Pinger) Init(clusterId int) error {
+func (p *Pinger) Init(clusterId int, evaluation *evaluator.Evaluation) error {
 	// TODO: These should be sourced from the environment
 	p.payload = &cluster.UpdateClusterInput{
-		Version:         "1.25.15",
+		Version:         evaluation.KubernetesVersion,
 		AgentVersion:    "1.2.3",
-		Provider:        "launchbox",
-		Region:          "us-east-1",
-		AgentIdentifier: "localhost",
+		Provider:        evaluation.Provider,
+		Region:          evaluation.Region,
+		AgentIdentifier: evaluation.AgentIdentifier,
 		ClusterId:       clusterId,
 	}
 	return nil

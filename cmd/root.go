@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	action_cable "github.com/launchboxio/action-cable"
+	"github.com/launchboxio/agent/pkg/evaluator"
 	"github.com/launchboxio/agent/pkg/events"
 	"github.com/launchboxio/agent/pkg/pinger"
 	"github.com/launchboxio/agent/pkg/server"
@@ -16,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -59,8 +61,17 @@ var rootCmd = &cobra.Command{
 
 		// Start our pinger. It just updates Launchbox that the agent is running
 		go func() {
+			kubeclient, err := loadKubeClient()
+			if err != nil {
+				log.Fatal(err)
+			}
+			eval := evaluator.New(kubeclient)
+			evaluation, err := eval.Evaluate()
+			if err != nil {
+				log.Fatal(err)
+			}
 			ping := pinger.New(cluster.New(sdk), logger)
-			_ = ping.Init(clusterId)
+			_ = ping.Init(clusterId, evaluation)
 			ping.Start(time.Second * 5)
 		}()
 
@@ -141,27 +152,11 @@ func init() {
 }
 
 func loadDynamicClient() (*dynamic.DynamicClient, error) {
-	if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
-		config, err := rest.InClusterConfig()
-		if err != nil {
-			return nil, err
-		}
-		return dynamic.NewForConfig(config)
-	}
-
-	var kubeconfig string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = filepath.Join(home, ".kube", "config")
-	} else {
-		kubeconfig = os.Getenv("KUBECONFIG")
-	}
-
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	conf, err := loadConfig()
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
-
-	return dynamic.NewForConfig(config)
+	return dynamic.NewForConfig(conf)
 }
 
 func loadClient() (runtimeclient.Client, error) {
@@ -171,4 +166,27 @@ func loadClient() (runtimeclient.Client, error) {
 	}
 	utilruntime.Must(v1alpha1.AddToScheme(kubeClient.Scheme()))
 	return kubeClient, nil
+}
+
+func loadKubeClient() (*kubernetes.Clientset, error) {
+	conf, err := loadConfig()
+	if err != nil {
+		return nil, err
+	}
+	return kubernetes.NewForConfig(conf)
+}
+
+func loadConfig() (*rest.Config, error) {
+	if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
+		return rest.InClusterConfig()
+	}
+
+	var kubeconfig string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = filepath.Join(home, ".kube", "config")
+	} else {
+		kubeconfig = os.Getenv("KUBECONFIG")
+	}
+
+	return clientcmd.BuildConfigFromFlags("", kubeconfig)
 }
