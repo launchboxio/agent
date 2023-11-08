@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+### [1.2.1](https://github.com/launchboxio/agent/compare/v1.2.0...v1.2.1) (2023-11-08)
+
+
+### Bug Fixes
+
+* Remove persistent prerun for testing ([c07b39a](https://github.com/launchboxio/agent/commit/c07b39afa800e7d989bdc53e888625ccc585fcaa))
+
 ## [1.2.0](https://github.com/launchboxio/agent/compare/v1.1.1...v1.2.0) (2023-11-08)
 
 
