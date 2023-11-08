@@ -134,7 +134,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().String("stream-url", "https://launchboxhq.io/cable", "Launchbox websocket endpoint")
+	rootCmd.Flags().String("stream-url", "wss://launchboxhq.io/cable", "Launchbox websocket endpoint")
 	rootCmd.Flags().Int("cluster-id", 0, "Cluster ID")
 	rootCmd.Flags().String("channel", "ClusterChannel", "Stream channel to subscribe to")
 	rootCmd.Flags().String("bind-address", ":8080", "Bind address for the http server")
