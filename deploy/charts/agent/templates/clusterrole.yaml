@@ -12,3 +12,6 @@ rules:
   - apiGroups: [ "pkg.crossplane.io" ]
     resources: [ "configurations" ]
     verbs: [ "get", "watch", "list", "create", "update", "patch", "delete" ]
+  - apiGroups: [ "" ]
+    resources: [ "nodes" ]
+    verbs: [ "get", "watch", "list" ]
