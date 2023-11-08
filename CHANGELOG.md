@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+### [1.2.2](https://github.com/launchboxio/agent/compare/v1.2.1...v1.2.2) (2023-11-08)
+
+
+### Bug Fixes
+
+* Adjust event processing ([55dd3dc](https://github.com/launchboxio/agent/commit/55dd3dce26dfc899574c90ba8f6f175a953952cb))
+
 ### [1.2.1](https://github.com/launchboxio/agent/compare/v1.2.0...v1.2.1) (2023-11-08)
 
 
