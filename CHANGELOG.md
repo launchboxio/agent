@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+### [1.1.1](https://github.com/launchboxio/agent/compare/v1.1.0...v1.1.1) (2023-11-08)
+
+
+### Bug Fixes
+
+* **lint:** Fix formatting ([f0482d8](https://github.com/launchboxio/agent/commit/f0482d8d037be291539b57ef070ac1e3f489ae07))
+
 ## [1.1.0](https://github.com/launchboxio/agent/compare/v1.0.3...v1.1.0) (2023-11-08)
 
 
