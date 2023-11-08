@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0](https://github.com/launchboxio/agent/compare/v1.0.3...v1.1.0) (2023-11-08)
+
+
+### Features
+
+* **eval:** Add evaluation to transmit cluster information ([9c1d7d8](https://github.com/launchboxio/agent/commit/9c1d7d82365165252bec56505761ab08e791cdc9))
+
 ### [1.0.3](https://github.com/launchboxio/agent/compare/v1.0.2...v1.0.3) (2023-11-08)
 
 
