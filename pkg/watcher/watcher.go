@@ -53,9 +53,9 @@ func (w *Watcher) WatchProjects(wg *sync.WaitGroup) error {
 
 	projectClient := project.New(w.Sdk)
 	for event := range changes.ResultChan() {
-		addonRes := event.Object.(*unstructured.Unstructured)
+		probject := event.Object.(*unstructured.Unstructured)
 
-		projectId, projectIdFound, err := unstructured.NestedInt64(addonRes.UnstructuredContent(), "spec", "id")
+		projectId, projectIdFound, err := unstructured.NestedInt64(probject.UnstructuredContent(), "spec", "id")
 		if err != nil {
 			w.Logger.Error(err, "Failed getting project ID")
 			continue
@@ -65,11 +65,11 @@ func (w *Watcher) WatchProjects(wg *sync.WaitGroup) error {
 			continue
 		}
 
-		update := &project.UpdateProjectInput{
+		update := &project.UpdateProjectInput{$
 			ProjectId: int(projectId),
 		}
 
-		status, statusFound, err := unstructured.NestedString(addonRes.UnstructuredContent(), "status", "status")
+		status, statusFound, err := unstructured.NestedString(probject.UnstructuredContent(), "status", "status")
 		if err != nil {
 			w.Logger.Error(err, "Failed getting status field")
 			continue
@@ -80,7 +80,7 @@ func (w *Watcher) WatchProjects(wg *sync.WaitGroup) error {
 			update.Status = DefaultProjectStatus
 		}
 
-		caCert, caCertFound, err := unstructured.NestedString(addonRes.UnstructuredContent(), "status", "caCertificate")
+		caCert, caCertFound, err := unstructured.NestedString(probject.UnstructuredContent(), "status", "caCertificate")
 		if err != nil {
 			w.Logger.Error(err, "Failed getting caCertificate field")
 			continue
