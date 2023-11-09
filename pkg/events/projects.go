@@ -132,7 +132,6 @@ func projectFromPayload(event *LaunchboxEvent) (*v1alpha1.Project, error) {
 			Slug: event.Payload["slug"].(string),
 			Id:   int(event.Payload["id"].(float64)),
 			// TODO: Pull this from the event payload
-			KubernetesVersion: "1.25.15",
 			Crossplane: v1alpha1.ProjectCrossplaneSpec{
 				Providers: []string{},
 			},
@@ -143,6 +142,9 @@ func projectFromPayload(event *LaunchboxEvent) (*v1alpha1.Project, error) {
 			},
 			Users: users,
 		},
+	}
+	if val, ok := event.Payload["kubernetes_version"]; ok {
+		project.Spec.KubernetesVersion = val.(string)
 	}
 	return project, nil
 }
