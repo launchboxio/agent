@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0](https://github.com/launchboxio/agent/compare/v1.2.2...v1.3.0) (2023-11-09)
+
+
+### Features
+
+* Populate project Kubernetes version ([2528b33](https://github.com/launchboxio/agent/commit/2528b336fc78ff58695e486e704bbaeb7e450e2b))
+
 ### [1.2.2](https://github.com/launchboxio/agent/compare/v1.2.1...v1.2.2) (2023-11-08)
 
 
