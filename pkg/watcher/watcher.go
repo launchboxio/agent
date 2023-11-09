@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-logr/logr"
 	launchbox "github.com/launchboxio/launchbox-go-sdk/config"
 	"github.com/launchboxio/launchbox-go-sdk/service/project"
@@ -10,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
+	"sync"
 )
 
 type Watcher struct {
@@ -28,17 +30,32 @@ func New(clientset *dynamic.DynamicClient, sdk *launchbox.Config, logger logr.Lo
 	}
 }
 
-func (w *Watcher) Run(resource schema.GroupVersionResource) error {
-	changes, err := w.Kube.Resource(resource).Watch(context.Background(), metav1.ListOptions{})
+func (w *Watcher) Run() error {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go w.WatchProjects(&wg)
+	go w.WatchAddons(&wg)
+
+	wg.Wait()
+	return nil
+}
+
+func (w *Watcher) WatchProjects(wg *sync.WaitGroup) error {
+	defer wg.Done()
+	changes, err := w.Kube.Resource(schema.GroupVersionResource{
+		Resource: "projects",
+		Group:    "core.launchboxhq.io",
+		Version:  "v1alpha1",
+	}).Watch(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	projectClient := project.New(w.Sdk)
 	for event := range changes.ResultChan() {
-		probject := event.Object.(*unstructured.Unstructured)
+		addonRes := event.Object.(*unstructured.Unstructured)
 
-		projectId, projectIdFound, err := unstructured.NestedInt64(probject.UnstructuredContent(), "spec", "id")
+		projectId, projectIdFound, err := unstructured.NestedInt64(addonRes.UnstructuredContent(), "spec", "id")
 		if err != nil {
 			w.Logger.Error(err, "Failed getting project ID")
 			continue
@@ -52,7 +69,7 @@ func (w *Watcher) Run(resource schema.GroupVersionResource) error {
 			ProjectId: int(projectId),
 		}
 
-		status, statusFound, err := unstructured.NestedString(probject.UnstructuredContent(), "status", "status")
+		status, statusFound, err := unstructured.NestedString(addonRes.UnstructuredContent(), "status", "status")
 		if err != nil {
 			w.Logger.Error(err, "Failed getting status field")
 			continue
@@ -63,7 +80,7 @@ func (w *Watcher) Run(resource schema.GroupVersionResource) error {
 			update.Status = DefaultProjectStatus
 		}
 
-		caCert, caCertFound, err := unstructured.NestedString(probject.UnstructuredContent(), "status", "caCertificate")
+		caCert, caCertFound, err := unstructured.NestedString(addonRes.UnstructuredContent(), "status", "caCertificate")
 		if err != nil {
 			w.Logger.Error(err, "Failed getting caCertificate field")
 			continue
@@ -87,6 +104,27 @@ func (w *Watcher) Run(resource schema.GroupVersionResource) error {
 		case watch.Deleted:
 			w.Logger.Info("Project deleted, not sure what to do from here...")
 		}
+	}
+	return nil
+}
+
+func (w *Watcher) WatchAddons(wg *sync.WaitGroup) error {
+	defer wg.Done()
+	changes, err := w.Kube.Resource(schema.GroupVersionResource{
+		Resource: "addons",
+		Group:    "core.launchboxhq.io",
+		Version:  "v1alpha1",
+	}).Watch(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	// Start watching the events, and log the change.
+	// TODO: We'll somehow want to transmit any success / errors back to HQ
+	// This is more complicated for addons, because while projects have a single
+	// installation, an addon is currently deployed once to each cluster
+	for event := range changes.ResultChan() {
+		fmt.Println(event)
 	}
 	return nil
 }
