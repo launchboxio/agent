@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+### [1.4.2](https://github.com/launchboxio/agent/compare/v1.4.1...v1.4.2) (2023-11-14)
+
+
+### Bug Fixes
+
+* Type cast addon parameters ([95440d6](https://github.com/launchboxio/agent/commit/95440d606866fb0d3847d260b3b0a5ce2743a560))
+
 ### [1.4.1](https://github.com/launchboxio/agent/compare/v1.4.0...v1.4.1) (2023-11-14)
 
 
