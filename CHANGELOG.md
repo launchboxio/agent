@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0](https://github.com/launchboxio/agent/compare/v1.3.0...v1.4.0) (2023-11-14)
+
+
+### Features
+
+* Add addon watcher ([61c6f12](https://github.com/launchboxio/agent/commit/61c6f1253d6801e7fe7128c1a23ff8a8a6960e3e))
+* Add watcher for addons ([6ca5585](https://github.com/launchboxio/agent/commit/6ca55854f3bd8ccc6e212a3f378a8c7e5be788ab))
+
+
+### Bug Fixes
+
+* Map a project payload to its configured addons ([20dbfeb](https://github.com/launchboxio/agent/commit/20dbfeb05690ba927aef69b7cb88068f7f2cf056))
+
 ## [1.3.0](https://github.com/launchboxio/agent/compare/v1.2.2...v1.3.0) (2023-11-09)
 
 
