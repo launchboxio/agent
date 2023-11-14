@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	launchbox "github.com/launchboxio/launchbox-go-sdk/config"
 	"github.com/launchboxio/launchbox-go-sdk/service/project"
+	"github.com/launchboxio/operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -65,7 +66,7 @@ func (w *Watcher) WatchProjects(wg *sync.WaitGroup) error {
 			continue
 		}
 
-		update := &project.UpdateProjectInput{$
+		update := &project.UpdateProjectInput{
 			ProjectId: int(projectId),
 		}
 
@@ -103,6 +104,37 @@ func (w *Watcher) WatchProjects(wg *sync.WaitGroup) error {
 			}
 		case watch.Deleted:
 			w.Logger.Info("Project deleted, not sure what to do from here...")
+		}
+
+		if event.Type == watch.Added || event.Type == watch.Modified {
+			addonStatuses, addonStatusesFound, err := unstructured.NestedMap(probject.UnstructuredContent(), "status", "addons")
+			if err != nil {
+				w.Logger.Error(err, "Failed getting addonstatus field")
+				continue
+			}
+			if !addonStatusesFound {
+				continue
+			}
+
+			projectAddons, projectAddonsFound, err := unstructured.NestedSlice(probject.UnstructuredContent(), "spec", "addons")
+			if err != nil {
+				w.Logger.Error(err, "Failed getting configured addons field")
+				continue
+			}
+			if !projectAddonsFound {
+				continue
+			}
+			// Also trigger a sync for each addon status
+			for identifier, status := range addonStatuses {
+				// We need to get the subscription ID, as well as the
+				// current status of the addon. We then POST back to
+				// LaunchboxHQ the status of the given addon installation
+				addonStatus := status.(v1alpha1.ProjectAddonStatus)
+				for _, addon := range projectAddons {
+					addon := addon.(v1alpha1.ProjectAddonSpec)
+
+				}
+			}
 		}
 	}
 	return nil
