@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/launchboxio/operator/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -148,16 +149,18 @@ func projectFromPayload(event *LaunchboxEvent) (*v1alpha1.Project, error) {
 	}
 
 	if val, ok := event.Payload["addons"]; ok {
+		fmt.Println(val)
 		if project.Spec.Addons == nil {
 			project.Spec.Addons = []v1alpha1.ProjectAddonSpec{}
 		}
-		for _, addon := range val.([]map[string]string) {
+		for _, addon := range val.([]interface{}) {
+			addonVal := addon.(map[string]string)
 			project.Spec.Addons = append(project.Spec.Addons, v1alpha1.ProjectAddonSpec{
-				AddonName:        addon["name"],
-				InstallationName: addon["install_name"],
-				Resource:         addon["resource"],
-				Version:          addon["version"],
-				Group:            addon["group"],
+				AddonName:        addonVal["name"],
+				InstallationName: addonVal["install_name"],
+				Resource:         addonVal["resource"],
+				Version:          addonVal["version"],
+				Group:            addonVal["group"],
 			})
 		}
 	}
