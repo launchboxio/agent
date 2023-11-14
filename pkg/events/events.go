@@ -7,8 +7,8 @@ const (
 	ProjectUpdatedEvent        = "projects.updated"
 	ProjectDeletedEvent        = "projects.deleted"
 	AddonCreatedEvent          = "addons.created"
-	AddonUpdatedEvent          = "addons.update"
-	AddonDeletedEvent          = "addons.delete"
+	AddonUpdatedEvent          = "addons.updated"
+	AddonDeletedEvent          = "addons.deleted"
 )
 
 type LaunchboxEvent struct {
