@@ -106,7 +106,7 @@ func (w *Watcher) WatchProjects(wg *sync.WaitGroup) error {
 		}
 
 		if event.Type == watch.Added || event.Type == watch.Modified {
-			addonStatuses, addonStatusesFound, err := unstructured.NestedMap(probject.UnstructuredContent(), "status", "addons")
+			_, addonStatusesFound, err := unstructured.NestedMap(probject.UnstructuredContent(), "status", "addons")
 			if err != nil {
 				w.Logger.Error(err, "Failed getting addonstatus field")
 				continue
