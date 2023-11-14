@@ -146,5 +146,20 @@ func projectFromPayload(event *LaunchboxEvent) (*v1alpha1.Project, error) {
 	if val, ok := event.Payload["kubernetes_version"]; ok {
 		project.Spec.KubernetesVersion = val.(string)
 	}
+
+	if val, ok := event.Payload["addons"]; ok {
+		if project.Spec.Addons == nil {
+			project.Spec.Addons = []v1alpha1.ProjectAddonSpec{}
+		}
+		for _, addon := range val.([]map[string]string) {
+			project.Spec.Addons = append(project.Spec.Addons, v1alpha1.ProjectAddonSpec{
+				AddonName:        addon["name"],
+				InstallationName: addon["install_name"],
+				Resource:         addon["resource"],
+				Version:          addon["version"],
+				Group:            addon["group"],
+			})
+		}
+	}
 	return project, nil
 }
