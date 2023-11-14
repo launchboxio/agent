@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+### [1.4.1](https://github.com/launchboxio/agent/compare/v1.4.0...v1.4.1) (2023-11-14)
+
+
+### Bug Fixes
+
+* Adjust type casting of addon interface ([46191cf](https://github.com/launchboxio/agent/commit/46191cf297cde5ff2a4d92e7e6634cb97db827af))
+
 ## [1.4.0](https://github.com/launchboxio/agent/compare/v1.3.0...v1.4.0) (2023-11-14)
 
 
