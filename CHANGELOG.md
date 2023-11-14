@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+### [1.4.3](https://github.com/launchboxio/agent/compare/v1.4.2...v1.4.3) (2023-11-14)
+
+
+### Bug Fixes
+
+* Use the appropriate event names for addons ([97da5a6](https://github.com/launchboxio/agent/commit/97da5a6eb3197847343d4bacdcb2ffd8a672d2b1))
+
 ### [1.4.2](https://github.com/launchboxio/agent/compare/v1.4.1...v1.4.2) (2023-11-14)
 
 
