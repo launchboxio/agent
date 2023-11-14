@@ -11,6 +11,10 @@ on:
     branches:
       - main
 
+env:
+  GOPRIVATE: github.com/launchboxio/operator
+  GH_ACCESS_TOKEN: ${{ secrets.GO_MODULE_ACCESS_TOKEN }}
+
 jobs:
   # Build and deploy the helm chart
   # Build and deploy the operator manifests

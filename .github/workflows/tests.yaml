@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+env:
+  GOPRIVATE: github.com/launchboxio/operator
+  GH_ACCESS_TOKEN: ${{ secrets.GO_MODULE_ACCESS_TOKEN }}
+
 jobs:
   helm:
     name: Test Helm Chart
