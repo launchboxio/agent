@@ -154,13 +154,13 @@ func projectFromPayload(event *LaunchboxEvent) (*v1alpha1.Project, error) {
 			project.Spec.Addons = []v1alpha1.ProjectAddonSpec{}
 		}
 		for _, addon := range val.([]interface{}) {
-			addonVal := addon.(map[string]string)
+			addonVal := addon.(map[string]interface{})
 			project.Spec.Addons = append(project.Spec.Addons, v1alpha1.ProjectAddonSpec{
-				AddonName:        addonVal["name"],
-				InstallationName: addonVal["install_name"],
-				Resource:         addonVal["resource"],
-				Version:          addonVal["version"],
-				Group:            addonVal["group"],
+				AddonName:        addonVal["name"].(string),
+				InstallationName: addonVal["install_name"].(string),
+				Resource:         addonVal["resource"].(string),
+				Version:          addonVal["version"].(string),
+				Group:            addonVal["group"].(string),
 			})
 		}
 	}
