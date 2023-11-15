@@ -30,7 +30,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: '1.21'
-#      - run: go get
+      - run: go get
       - run: |
           formatted_count=$(gofmt -s -l . | wc -l)
           if [ "${formatted_count}" -ne 0 ] ; then
@@ -46,6 +46,6 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: '1.21'
-#      - run: go get
-      - run: go build -mod=vendor -v ./...
+      - run: go get
+      - run: go build -v ./...
       - run: go test -v ./... -cover

@@ -2,8 +2,10 @@ package events
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"github.com/go-logr/logr"
+	launchbox "github.com/launchboxio/launchbox-go-sdk/config"
+	"github.com/launchboxio/launchbox-go-sdk/service/project"
 	"github.com/launchboxio/operator/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,20 +32,20 @@ type ProjectPayload struct {
 type ProjectHandler struct {
 	Logger logr.Logger
 	Client client.Client
+	Sdk    *launchbox.Config
 }
 
 func (ph *ProjectHandler) syncProjectResource(event *LaunchboxEvent) error {
-	project := &v1alpha1.Project{}
-
-	resource, err := projectFromPayload(event)
+	resource, err := ph.projectFromPayload(event)
 	if err != nil {
 		return err
 	}
 
+	var projectCr *v1alpha1.Project
 	if err := ph.Client.Get(context.TODO(), types.NamespacedName{
 		Name:      resource.ObjectMeta.Name,
 		Namespace: resource.ObjectMeta.Namespace,
-	}, project); err != nil {
+	}, projectCr); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
@@ -51,8 +53,8 @@ func (ph *ProjectHandler) syncProjectResource(event *LaunchboxEvent) error {
 		return ph.Client.Create(context.TODO(), resource)
 	}
 	ph.Logger.Info("Updating existing project resource")
-	project.Spec = resource.Spec
-	return ph.Client.Update(context.TODO(), project)
+	projectCr.Spec = resource.Spec
+	return ph.Client.Update(context.TODO(), projectCr)
 }
 
 func (ph *ProjectHandler) Create(event *LaunchboxEvent) error {
@@ -64,7 +66,7 @@ func (ph *ProjectHandler) Update(event *LaunchboxEvent) error {
 }
 
 func (ph *ProjectHandler) Delete(event *LaunchboxEvent) error {
-	resource, err := projectFromPayload(event)
+	resource, err := ph.projectFromPayload(event)
 	if err != nil {
 		return err
 	}
@@ -80,7 +82,7 @@ func (ph *ProjectHandler) Delete(event *LaunchboxEvent) error {
 }
 
 func (ph *ProjectHandler) Pause(event *LaunchboxEvent) error {
-	resource, err := projectFromPayload(event)
+	resource, err := ph.projectFromPayload(event)
 	if err != nil {
 		return err
 	}
@@ -97,7 +99,7 @@ func (ph *ProjectHandler) Pause(event *LaunchboxEvent) error {
 }
 
 func (ph *ProjectHandler) Resume(event *LaunchboxEvent) error {
-	resource, err := projectFromPayload(event)
+	resource, err := ph.projectFromPayload(event)
 	if err != nil {
 		return err
 	}
@@ -113,56 +115,61 @@ func (ph *ProjectHandler) Resume(event *LaunchboxEvent) error {
 }
 
 // TODO: We should instead just query the projects directly using the SDK
-func projectFromPayload(event *LaunchboxEvent) (*v1alpha1.Project, error) {
-	var users []v1alpha1.ProjectUser
-	if payloadUsers, ok := event.Payload["users"]; ok {
-		for _, user := range payloadUsers.([]interface{}) {
-			users = append(users, v1alpha1.ProjectUser{
-				Email:       user.(map[string]interface{})["email"].(string),
-				ClusterRole: user.(map[string]interface{})["clusterRole"].(string),
-			})
-		}
+func (ph *ProjectHandler) projectFromPayload(event *LaunchboxEvent) (*v1alpha1.Project, error) {
+	if _, ok := event.Payload["id"]; !ok {
+		return nil, errors.New("invalid payload: no ID field found")
+	}
+	projectId, _ := event.Payload["id"].(float32)
+	if projectId == 0 {
+		return nil, errors.New("invalid payload: unable to cast ID")
 	}
 
-	project := &v1alpha1.Project{
+	projectSdk := project.New(ph.Sdk)
+	output, err := projectSdk.GetManifest(&project.GetProjectManifestInput{
+		ProjectId: int(projectId),
+	})
+	if err != nil {
+		return nil, err
+	}
+	users := []v1alpha1.ProjectUser{
+		{Email: output.Manifest.User.Email, ClusterRole: "cluster-admin"},
+	}
+
+	projectCr := &v1alpha1.Project{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      event.Payload["slug"].(string),
+			Name:      output.Manifest.Slug,
 			Namespace: "lbx-system",
 		},
 		Spec: v1alpha1.ProjectSpec{
-			Slug: event.Payload["slug"].(string),
-			Id:   int(event.Payload["id"].(float64)),
+			Slug: output.Manifest.Slug,
+			Id:   output.Manifest.Id,
 			// TODO: Pull this from the event payload
 			Crossplane: v1alpha1.ProjectCrossplaneSpec{
 				Providers: []string{},
 			},
 			Resources: v1alpha1.Resources{
-				Cpu:    int32(event.Payload["cpu"].(float64)),
-				Memory: int32(event.Payload["memory"].(float64)),
-				Disk:   int32(event.Payload["disk"].(float64)),
+				Cpu:    int32(output.Manifest.Cpu),
+				Memory: int32(output.Manifest.Memory),
+				Disk:   int32(output.Manifest.Disk),
 			},
-			Users: users,
+			KubernetesVersion: output.Manifest.KubernetesVersion,
+			Users:             users,
 		},
 	}
-	if val, ok := event.Payload["kubernetes_version"]; ok {
-		project.Spec.KubernetesVersion = val.(string)
+
+	if projectCr.Spec.Addons == nil {
+		projectCr.Spec.Addons = []v1alpha1.ProjectAddonSpec{}
 	}
 
-	if val, ok := event.Payload["addons"]; ok {
-		fmt.Println(val)
-		if project.Spec.Addons == nil {
-			project.Spec.Addons = []v1alpha1.ProjectAddonSpec{}
-		}
-		for _, addon := range val.([]interface{}) {
-			addonVal := addon.(map[string]interface{})
-			project.Spec.Addons = append(project.Spec.Addons, v1alpha1.ProjectAddonSpec{
-				AddonName:        addonVal["name"].(string),
-				InstallationName: addonVal["install_name"].(string),
-				Resource:         addonVal["resource"].(string),
-				Version:          addonVal["version"].(string),
-				Group:            addonVal["group"].(string),
-			})
-		}
+	for _, addonSub := range output.Manifest.AddonSubscriptions {
+		projectCr.Spec.Addons = append(projectCr.Spec.Addons, v1alpha1.ProjectAddonSpec{
+			AddonName:        addonSub.Addon.Name,
+			InstallationName: addonSub.Name,
+			Resource:         addonSub.Addon.DefaultVersion.ClaimName,
+			Group:            addonSub.Addon.DefaultVersion.Group,
+			Version:          addonSub.Addon.DefaultVersion.Version,
+		})
 	}
-	return project, nil
+
+	return projectCr, nil
 }
