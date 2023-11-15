@@ -8,7 +8,6 @@ RUN go mod download
 COPY *.go ./
 COPY pkg/ pkg/
 COPY cmd/ cmd/
-COPY vendor/ vendor/
 
 ARG APP_VERSION="v0.0.0+unknown"
 RUN CGO_ENABLED=0 GOOS=linux go build \
