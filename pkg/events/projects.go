@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/go-logr/logr"
 	launchbox "github.com/launchboxio/launchbox-go-sdk/config"
 	"github.com/launchboxio/launchbox-go-sdk/service/project"
@@ -119,6 +120,7 @@ func (ph *ProjectHandler) projectFromPayload(event *LaunchboxEvent) (*v1alpha1.P
 	if _, ok := event.Payload["id"]; !ok {
 		return nil, errors.New("invalid payload: no ID field found")
 	}
+	fmt.Println(event.Payload["id"])
 	projectId, _ := event.Payload["id"].(float32)
 	if projectId == 0 {
 		return nil, errors.New("invalid payload: unable to cast ID")
