@@ -41,7 +41,7 @@ func (ph *ProjectHandler) syncProjectResource(event *LaunchboxEvent) error {
 		return err
 	}
 
-	var projectCr *v1alpha1.Project
+	projectCr := &v1alpha1.Project{}
 	if err := ph.Client.Get(context.TODO(), types.NamespacedName{
 		Name:      resource.ObjectMeta.Name,
 		Namespace: resource.ObjectMeta.Namespace,
@@ -119,8 +119,8 @@ func (ph *ProjectHandler) projectFromPayload(event *LaunchboxEvent) (*v1alpha1.P
 	if _, ok := event.Payload["id"]; !ok {
 		return nil, errors.New("invalid payload: no ID field found")
 	}
-	projectId, _ := event.Payload["id"].(float32)
-	if projectId == 0 {
+	projectId, ok := event.Payload["id"].(float64)
+	if !ok {
 		return nil, errors.New("invalid payload: unable to cast ID")
 	}
 
