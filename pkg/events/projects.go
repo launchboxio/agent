@@ -121,7 +121,7 @@ func (ph *ProjectHandler) projectFromPayload(event *LaunchboxEvent) (*v1alpha1.P
 		return nil, errors.New("invalid payload: no ID field found")
 	}
 	fmt.Println(event.Payload["id"])
-	projectId, _ := event.Payload["id"].(float32)
+	projectId, _ := event.Payload["id"].(int)
 	if projectId == 0 {
 		return nil, errors.New("invalid payload: unable to cast ID")
 	}
