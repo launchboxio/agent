@@ -123,8 +123,8 @@ func (ph *ProjectHandler) projectFromPayload(event *LaunchboxEvent) (*v1alpha1.P
 	}
 	fmt.Println(event.Payload["id"])
 	fmt.Println(reflect.TypeOf(event.Payload["id"]))
-	projectId, _ := event.Payload["id"].(int)
-	if projectId == 0 {
+	projectId, ok := event.Payload["id"].(float64)
+	if !ok {
 		return nil, errors.New("invalid payload: unable to cast ID")
 	}
 
