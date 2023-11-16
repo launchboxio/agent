@@ -11,6 +11,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -121,6 +122,7 @@ func (ph *ProjectHandler) projectFromPayload(event *LaunchboxEvent) (*v1alpha1.P
 		return nil, errors.New("invalid payload: no ID field found")
 	}
 	fmt.Println(event.Payload["id"])
+	fmt.Println(reflect.TypeOf(event.Payload["id"]))
 	projectId, _ := event.Payload["id"].(int)
 	if projectId == 0 {
 		return nil, errors.New("invalid payload: unable to cast ID")
