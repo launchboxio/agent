@@ -11,7 +11,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -40,10 +39,12 @@ type ProjectHandler struct {
 func (ph *ProjectHandler) syncProjectResource(event *LaunchboxEvent) error {
 	resource, err := ph.projectFromPayload(event)
 	if err != nil {
+		fmt.Println("Failed generating resource")
 		return err
 	}
 
 	var projectCr *v1alpha1.Project
+	fmt.Println("Checking for existing resource")
 	if err := ph.Client.Get(context.TODO(), types.NamespacedName{
 		Name:      resource.ObjectMeta.Name,
 		Namespace: resource.ObjectMeta.Namespace,
@@ -121,18 +122,18 @@ func (ph *ProjectHandler) projectFromPayload(event *LaunchboxEvent) (*v1alpha1.P
 	if _, ok := event.Payload["id"]; !ok {
 		return nil, errors.New("invalid payload: no ID field found")
 	}
-	fmt.Println(event.Payload["id"])
-	fmt.Println(reflect.TypeOf(event.Payload["id"]))
 	projectId, ok := event.Payload["id"].(float64)
 	if !ok {
 		return nil, errors.New("invalid payload: unable to cast ID")
 	}
 
+	fmt.Println(projectId)
 	projectSdk := project.New(ph.Sdk)
 	output, err := projectSdk.GetManifest(&project.GetProjectManifestInput{
 		ProjectId: int(projectId),
 	})
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 	users := []v1alpha1.ProjectUser{
@@ -161,6 +162,7 @@ func (ph *ProjectHandler) projectFromPayload(event *LaunchboxEvent) (*v1alpha1.P
 		},
 	}
 
+	fmt.Println(projectCr)
 	if projectCr.Spec.Addons == nil {
 		projectCr.Spec.Addons = []v1alpha1.ProjectAddonSpec{}
 	}
@@ -175,5 +177,6 @@ func (ph *ProjectHandler) projectFromPayload(event *LaunchboxEvent) (*v1alpha1.P
 		})
 	}
 
+	fmt.Println("Returning project")
 	return projectCr, nil
 }
