@@ -125,7 +125,7 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		handler := events.New(logger, client)
+		handler := events.New(logger, client, sdk)
 		handler.RegisterSubscriptions(stream, identifier)
 
 		if err := stream.Connect(ctx); err != nil {
