@@ -1,16 +1,16 @@
 package events
 
 import (
-  "context"
-  "errors"
-  "github.com/go-logr/logr"
-  launchbox "github.com/launchboxio/launchbox-go-sdk/config"
-  "github.com/launchboxio/launchbox-go-sdk/service/project"
-  "github.com/launchboxio/operator/api/v1alpha1"
-  apierrors "k8s.io/apimachinery/pkg/api/errors"
-  metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-  "k8s.io/apimachinery/pkg/types"
-  "sigs.k8s.io/controller-runtime/pkg/client"
+	"context"
+	"errors"
+	"github.com/go-logr/logr"
+	launchbox "github.com/launchboxio/launchbox-go-sdk/config"
+	"github.com/launchboxio/launchbox-go-sdk/service/project"
+	"github.com/launchboxio/operator/api/v1alpha1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ProjectEventPayload struct {
