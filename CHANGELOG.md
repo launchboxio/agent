@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+### [1.5.1](https://github.com/launchboxio/agent/compare/v1.5.0...v1.5.1) (2023-11-16)
+
+
+### Bug Fixes
+
+* Patch type casting and loading of project resource from event ([a4bfb74](https://github.com/launchboxio/agent/commit/a4bfb749e7062738db03e270d7802eb6cb0bc7de))
+
 ## [1.5.0](https://github.com/launchboxio/agent/compare/v1.4.3...v1.5.0) (2023-11-16)
 
 
