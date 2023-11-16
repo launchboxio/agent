@@ -4,18 +4,21 @@ import (
 	"encoding/json"
 	"github.com/go-logr/logr"
 	action_cable "github.com/launchboxio/action-cable"
+	launchbox "github.com/launchboxio/launchbox-go-sdk/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Handler struct {
 	Logger logr.Logger
 	Client client.Client
+	Sdk    *launchbox.Config
 }
 
-func New(logger logr.Logger, client client.Client) *Handler {
+func New(logger logr.Logger, client client.Client, sdk *launchbox.Config) *Handler {
 	handler := &Handler{
 		Logger: logger,
 		Client: client,
+		Sdk:    sdk,
 	}
 	return handler
 }
@@ -65,6 +68,7 @@ func (h *Handler) projectHandler() *ProjectHandler {
 	return &ProjectHandler{
 		Logger: h.Logger,
 		Client: h.Client,
+		Sdk:    h.Sdk,
 	}
 }
 
