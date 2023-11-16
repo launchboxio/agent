@@ -43,7 +43,7 @@ func (ph *ProjectHandler) syncProjectResource(event *LaunchboxEvent) error {
 		return err
 	}
 
-	var projectCr *v1alpha1.Project
+	projectCr := &v1alpha1.Project{}
 	fmt.Println("Checking for existing resource")
 	if err := ph.Client.Get(context.TODO(), types.NamespacedName{
 		Name:      resource.ObjectMeta.Name,
