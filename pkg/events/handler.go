@@ -2,7 +2,6 @@ package events
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/go-logr/logr"
 	action_cable "github.com/launchboxio/action-cable"
 	launchbox "github.com/launchboxio/launchbox-go-sdk/config"
@@ -39,8 +38,6 @@ func (h *Handler) RegisterSubscriptions(stream *action_cable.Stream, identifier 
 		if err != nil {
 			h.Logger.Error(err, "Failed parsing event")
 		}
-		fmt.Println(parsedEvent.Type)
-		fmt.Println(event.Message)
 		switch parsedEvent.Type {
 		case ProjectCreatedEvent:
 			handler = projectHandler.Create
