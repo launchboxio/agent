@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0](https://github.com/launchboxio/agent/compare/v1.4.3...v1.5.0) (2023-11-16)
+
+
+### Features
+
+* Remove vendor, process using manifest endpoint ([365eef6](https://github.com/launchboxio/agent/commit/365eef6de88418db790e41fd04d3804115f990fc))
+
+
+### Bug Fixes
+
+* Remove GOPRIVATE ([dbc993d](https://github.com/launchboxio/agent/commit/dbc993d88df3322e1ba4f55b5f8ba80b6371f336))
+* Remove references ([81e5c7b](https://github.com/launchboxio/agent/commit/81e5c7b0734ac8236dc3cc4bd57fe6d06ac6e990))
+
 ### [1.4.3](https://github.com/launchboxio/agent/compare/v1.4.2...v1.4.3) (2023-11-14)
 
 
