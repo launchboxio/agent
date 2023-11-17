@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+### [1.5.2](https://github.com/launchboxio/agent/compare/v1.5.1...v1.5.2) (2023-11-17)
+
+
+### Bug Fixes
+
+* Add pkg.crossplane.io/v1 to client scheme ([433c2ca](https://github.com/launchboxio/agent/commit/433c2ca800edc2601cf41822d07ee0971fa12108))
+
 ### [1.5.1](https://github.com/launchboxio/agent/compare/v1.5.0...v1.5.1) (2023-11-16)
 
 
