@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	crossplanepkgv1 "github.com/crossplane/crossplane/apis/pkg/v1"
 	action_cable "github.com/launchboxio/action-cable"
 	"github.com/launchboxio/agent/pkg/evaluator"
 	"github.com/launchboxio/agent/pkg/events"
@@ -162,6 +163,8 @@ func loadClient() (runtimeclient.Client, error) {
 		return nil, err
 	}
 	utilruntime.Must(v1alpha1.AddToScheme(kubeClient.Scheme()))
+	utilruntime.Must(crossplanepkgv1.AddToScheme(kubeClient.Scheme()))
+
 	return kubeClient, nil
 }
 
